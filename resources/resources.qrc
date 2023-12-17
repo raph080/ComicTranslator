@@ -1,0 +1,21 @@
+<RCC>
+  <qresource prefix="/">
+    <file>wand-magic-sparkles.svg</file>
+    <file>rotate-left.svg</file>
+    <file>rotate-right.svg</file>
+    <file>trash-xmark.svg</file>
+    <file>eraser.svg</file>
+    <file>paint-brush-fine.svg</file>
+    <file>magnifying-glass-minus.svg</file>
+    <file>magnifying-glass-plus.svg</file>
+    <file>border-all.svg</file>
+    <file>text-slash.svg</file>
+    <file>circle-left.svg</file>
+    <file>circle-right.svg</file>
+    <file>down.svg</file>
+    <file>layer-group.svg</file>
+    <file>left.svg</file>
+    <file>right.svg</file>
+    <file>up.svg</file>
+  </qresource>
+</RCC>
