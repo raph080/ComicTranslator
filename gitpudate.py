@@ -1,4 +1,4 @@
-from PySide6 import QtWidgets, QtCore, QtGui
+from PySide6 import QtWidgets
 from ui.updatedialog import Ui_updateDialog
 import git
 import os
