@@ -282,17 +282,11 @@
    </property>
   </action>
   <action name="actionExportComposition">
-   <property name="checkable">
-    <bool>true</bool>
-   </property>
    <property name="text">
     <string>final composition</string>
    </property>
   </action>
   <action name="actionExportModification">
-   <property name="checkable">
-    <bool>true</bool>
-   </property>
    <property name="text">
     <string>modification only</string>
    </property>

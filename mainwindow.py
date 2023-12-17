@@ -203,32 +203,54 @@ class MainWindow(QtWidgets.QMainWindow):
         return masks
 
     def _export_modifications(self):
-        print("modification")
+        file_path, _ = QtWidgets.QFileDialog.getSaveFileName(
+            self, "Save File",
+            None,
+            "Images (*.png *.tif *.jpg)")
+
+        if not file_path:
+            return
+
+        pixmap = QtGui.QPixmap(self._original_filepath)
+        pixmap.fill(QtCore.Qt.transparent)
+        self._export_masks_to_pixmap(pixmap)
+        pixmap.save(file_path)
 
     def _export_composition(self):
-        pixmap = QtGui.QPixmap(self._original_filepath)
+        file_path, _ = QtWidgets.QFileDialog.getSaveFileName(
+            self, "Save File",
+            None,
+            "Images (*.png *.tif *.jpg)")
 
+        if not file_path:
+            return
+
+        pixmap = QtGui.QPixmap(self._original_filepath)
+        self._export_masks_to_pixmap(pixmap)
+        pixmap.save(file_path)
+
+    def _export_masks_to_pixmap(self, pixmap: QtGui.QPixmap) -> None:
         for cell in self._cells:
             mask = cell.get_mask()
-            if mask:
-                x, y = cell.get_origin()
-                w = mask.width
-                h = mask.height
 
-                blank = self._generate_blank_for_cell(cell)
-                imageprocessing.apply_mask_to_image(blank, mask)
-                mask_pixmap = imageprocessing.pil_image_to_qpixmap(blank)
-                # mask_pixmap = imageprocessing.pil_mask_to_pixmap(
-                #     mask, color=(255, 0, 0, 0))
+            if not mask:
+                continue
 
-                painter = QtGui.QPainter(pixmap)
+            x, y = cell.get_origin()
+            w = mask.width
+            h = mask.height
 
-                target = QtCore.QRectF(x, y, w, h)
-                source = QtCore.QRectF(0, 0, w, h)
-                painter.drawPixmap(target, mask_pixmap, source)
+            blank = self._generate_blank_for_cell(cell)
+            imageprocessing.apply_mask_to_image(blank, mask)
+            mask_pixmap = imageprocessing.pil_image_to_qpixmap(blank)
 
-                painter.end()
-        pixmap.save("/Users/raphaeljouretz/Documents/comic_translator/out.png")
+            painter = QtGui.QPainter(pixmap)
+
+            target = QtCore.QRectF(x, y, w, h)
+            source = QtCore.QRectF(0, 0, w, h)
+            painter.drawPixmap(target, mask_pixmap, source)
+
+            painter.end()
 
     def _is_auto_text_blank(self):
         return self.ui.actionAutoTextRemovalAndBlankAlignment.isChecked()
