@@ -11,11 +11,9 @@ class GitUpdate():
 
     @classmethod
     def is_up_to_date(cls):
-        commits_behind = REPOS.iter_commits('main..origin/main')
-        # commits_ahead = REPOS.iter_commits('origin/main..main')
-        count = sum(1 for c in commits_behind)
-        print(count)
-        return (count == 0)
+        commits_ahead = REPOS.iter_commits('origin/main..main')
+        count_ahead = sum(1 for c in commits_ahead)
+        return (count_ahead == 0)
 
     @classmethod
     def update(cls):
@@ -32,7 +30,16 @@ class UpdateDialog(QtWidgets.QDialog):
 
         self.ui.updateButton.clicked.connect(self._update)
 
+        self._update_log()
+
     def _update(self):
         o = REPOS.remotes.origin
         o.pull()
-        print("pull")
+        self.accept()
+
+    def _update_log(self):
+        log = ""
+        commits_ahead = REPOS.iter_commits('origin/main..main')
+        for c in commits_ahead:
+            log += c.message + "\n"
+        self.ui.plainTextEdit.setPlainText(log)
