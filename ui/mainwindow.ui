@@ -55,6 +55,7 @@
      <addaction name="actionExportComposition"/>
      <addaction name="actionExportModification"/>
     </widget>
+    <addaction name="actionNew"/>
     <addaction name="actionLoad"/>
     <addaction name="actionSave"/>
     <addaction name="menuExport"/>
@@ -289,6 +290,11 @@
   <action name="actionExportModification">
    <property name="text">
     <string>modification only</string>
+   </property>
+  </action>
+  <action name="actionNew">
+   <property name="text">
+    <string>New</string>
    </property>
   </action>
  </widget>
