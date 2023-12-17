@@ -11,8 +11,10 @@ class GitUpdate():
 
     @classmethod
     def is_up_to_date(cls):
-        commits_ahead = REPOS.iter_commits('origin/main..main')
-        count = sum(1 for c in commits_ahead)
+        commits_behind = REPOS.iter_commits('main..origin/main')
+        # commits_ahead = REPOS.iter_commits('origin/main..main')
+        count = sum(1 for c in commits_behind)
+        print(count)
         return (count == 0)
 
     @classmethod
