@@ -39,8 +39,8 @@ class UpdateDialog(QtWidgets.QDialog):
         self.accept()
 
     def _update_log(self):
-        log = ""
         commits_ahead = REPOS.iter_commits('main..origin/main')
+        log = ""
         for c in commits_ahead:
             log += c.message + "\n"
         self.ui.plainTextEdit.setPlainText(log)
