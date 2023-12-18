@@ -2,7 +2,7 @@ from PySide6 import QtWidgets, QtCore, QtGui
 import sys
 import os
 import json
-from PIL import Image, ImageQt
+from PIL import Image
 import imageprocessing
 from graphicsscene import GraphicsScene
 
