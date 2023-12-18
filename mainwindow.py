@@ -236,6 +236,7 @@ class MainWindow(QtWidgets.QMainWindow):
         data = json.load(f)
 
         self._cells = []
+        self._original_filepath = data["original_filepath"]
         for cell_data in data['cells']:
             image = imageprocessing.str_to_image(cell_data["image"])
             mask = imageprocessing.str_to_image(cell_data["mask"])
@@ -266,7 +267,8 @@ class MainWindow(QtWidgets.QMainWindow):
         self._save_cell_state()
 
         data = {
-            "cells": []
+            "cells": [],
+            "original_filepath": self._original_filepath
         }
         for cell in self._cells:
             data["cells"].append({
