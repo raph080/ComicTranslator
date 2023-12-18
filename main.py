@@ -11,7 +11,7 @@ def main():
     from PySide6 import QtWidgets
     app = QtWidgets.QApplication(sys.argv)
 
-    from gitpudate import GitUpdate
+    from gitupdate import GitUpdate
 
     if not GitUpdate.is_up_to_date():
         GitUpdate.update()
