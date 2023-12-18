@@ -2,6 +2,7 @@ from sklearn.cluster import KMeans
 import numpy as np
 import cv2
 import math
+import json
 import pytesseract
 from PIL import Image, ImageDraw, ImageFilter, ImageChops, ImageEnhance, ImageOps
 from PySide6 import QtCore, QtGui
@@ -34,6 +35,18 @@ def pil_mask_to_pixmap(mask: Image, color: tuple) -> QtGui.QPixmap:
     channels = mask.split()
     image.putalpha(channels[0])
     return pil_image_to_qpixmap(image)
+
+
+def image_to_str(image: Image) -> str:
+    return json.dumps(np.array(image).tolist())
+
+
+def str_to_image(image_str: str) -> Image:
+    data = json.loads(image_str)
+    if not data:
+        return None
+    arr = np.array(data, dtype='uint8')
+    return Image.fromarray(arr)
 
 
 def crop_image(image: Image, size: tuple, offset: tuple = (0, 0)) -> Image:

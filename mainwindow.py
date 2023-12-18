@@ -1,6 +1,7 @@
 from PySide6 import QtWidgets, QtCore, QtGui
 import sys
-import io
+import os
+import json
 from PIL import Image, ImageQt
 import imageprocessing
 from graphicsscene import GraphicsScene
@@ -110,20 +111,11 @@ class MainWindow(QtWidgets.QMainWindow):
         self.ui = Ui_MainWindow()
         self.ui.setupUi(self)
 
-        self.setWindowTitle("My App")
+        self.setWindowTitle("Comic Translator")
 
-        self._original_filepath = "/Users/raphaeljouretz/Documents/comic_translator/planche.tif"
-        blank_filepath = "/Users/raphaeljouretz/Documents/comic_translator/blank.png"
-
-        image = Image.open(self._original_filepath)
-
-        cell_rectanlges = imageprocessing.get_cell_rectangles(image)
-        self._cells: list[Cell] = []
-        for rect in cell_rectanlges:
-            x, y, w, h = rect
-            cropped_image = imageprocessing.crop_image(image, (w, h), (-x, -y))
-            cell = Cell(cropped_image, (x, y))
-            self._cells.append(cell)
+        cur_folder = os.path.dirname(__file__)
+        self._match_path = os.path.join(cur_folder, "templates", "match.png")
+        self._blank_path = os.path.join(cur_folder, "templates", "blank.png")
 
         self._cell_id = 0
 
@@ -141,6 +133,9 @@ class MainWindow(QtWidgets.QMainWindow):
         self.ui.actionComposeLayers.triggered.connect(self._toggle_compsition)
         self.ui.actionAutoTextRemovalAndBlankAlignment.triggered.connect(
             self._set_auto_text_blank)
+        self.ui.actionNew.triggered.connect(self._new)
+        self.ui.actionSave.triggered.connect(self._save)
+        self.ui.actionLoad.triggered.connect(self._load)
         self.ui.actionExportModification.triggered.connect(
             self._export_modifications)
         self.ui.actionExportComposition.triggered.connect(
@@ -181,12 +176,22 @@ class MainWindow(QtWidgets.QMainWindow):
 
         self._mouse_prev_pos = None
         self._is_mouse_pressed = False
-        self._zoom_level = 1
         self._masks: list[TmpMask] = []
         self._text_mask: TmpMask = None
         self._redo_stack: list[TmpMask] = []
-        self._original_blank = Image.open(blank_filepath)
+        self._original_blank = Image.open(self._blank_path)
+        self._background_item = None
+        self._draw_layer_item = None
 
+        self._clear()
+
+    def _clear(self):
+        self._cells = []
+        self._cell_id = 0
+        self._masks: list[TmpMask] = []
+        self._text_mask: TmpMask = None
+        self._redo_stack: list[TmpMask] = []
+        self._scene.clear()
         self._background_item = QtWidgets.QGraphicsPixmapItem()
         self._draw_layer_item = QtWidgets.QGraphicsPixmapItem()
         self._scene.addItem(self._background_item)
@@ -194,7 +199,89 @@ class MainWindow(QtWidgets.QMainWindow):
 
         self.ui.stackedWidget.hide()
 
+    def _new(self):
+        file_path, _ = QtWidgets.QFileDialog.getOpenFileName(
+            self, "Open Image",
+            None,
+            "Images (*.png *.tif *.jpg)")
+
+        if not file_path:
+            return
+
+        self._clear()
+
+        self._original_filepath = file_path
+        image = Image.open(self._original_filepath)
+
+        cell_rectanlges = imageprocessing.get_cell_rectangles(image)
+        self._cells: list[Cell] = []
+        for rect in cell_rectanlges:
+            x, y, w, h = rect
+            cropped_image = imageprocessing.crop_image(image, (w, h), (-x, -y))
+            cell = Cell(cropped_image, (x, y))
+            self._cells.append(cell)
+
         self._load_image(self._cell_id)
+
+    def _load(self):
+        file_path, _ = QtWidgets.QFileDialog.getOpenFileName(
+            self, "Open File",
+            None,
+            "File (*.fred)")
+
+        if not file_path:
+            return
+
+        f = open(file_path)
+        data = json.load(f)
+
+        self._cells = []
+        for cell_data in data['cells']:
+            image = imageprocessing.str_to_image(cell_data["image"])
+            mask = imageprocessing.str_to_image(cell_data["mask"])
+            cell = Cell(image)
+            cell.set_blank_origin(cell_data["blank_origin"])
+            cell.set_brightness(cell_data["brightness"])
+            cell.set_sharpness(cell_data["sharpness"])
+            cell.set_contrast(cell_data["contrast"])
+            cell.set_hue(cell_data["hue"])
+            cell.set_origin(cell_data["origin"])
+            cell.set_mask(mask)
+            self._cells.append(cell)
+
+        f.close()
+
+        self._cell_id = 0
+        self._load_image(self._cell_id)
+
+    def _save(self):
+        file_path, _ = QtWidgets.QFileDialog.getSaveFileName(
+            self, "Save File",
+            None,
+            "File (*.fred)")
+
+        if not file_path:
+            return
+
+        self._save_cell_state()
+
+        data = {
+            "cells": []
+        }
+        for cell in self._cells:
+            data["cells"].append({
+                "blank_origin": cell.get_blank_origin(),
+                "brightness": cell.get_brightness(),
+                "sharpness": cell.get_sharpness(),
+                "contrast": cell.get_contrast(),
+                "hue": cell.get_hue(),
+                "image": imageprocessing.image_to_str(cell.get_image()),
+                "mask": imageprocessing.image_to_str(cell.get_mask()),
+                "origin": cell.get_origin()
+            })
+
+        with open(file_path, 'w') as f:
+            json.dump(data, f, ensure_ascii=False, indent=4)
 
     def _get_cur_masks(self):
         masks = self._masks.copy()
@@ -213,6 +300,7 @@ class MainWindow(QtWidgets.QMainWindow):
 
         pixmap = QtGui.QPixmap(self._original_filepath)
         pixmap.fill(QtCore.Qt.transparent)
+        self._save_cell_state()
         self._export_masks_to_pixmap(pixmap)
         pixmap.save(file_path)
 
@@ -226,6 +314,7 @@ class MainWindow(QtWidgets.QMainWindow):
             return
 
         pixmap = QtGui.QPixmap(self._original_filepath)
+        self._save_cell_state()
         self._export_masks_to_pixmap(pixmap)
         pixmap.save(file_path)
 
@@ -255,13 +344,9 @@ class MainWindow(QtWidgets.QMainWindow):
     def _is_auto_text_blank(self):
         return self.ui.actionAutoTextRemovalAndBlankAlignment.isChecked()
 
-    def _set_auto_text_blank(self, state):
-        if state:
-            self._add_letters_to_mask()
-            self._move_blank_auto()
-        else:
-            self._text_mask = None
-            self._refresh_draw_layer()
+    def _set_auto_text_blank(self):
+        self._add_letters_to_mask()
+        self._move_blank_auto()
 
     def _undo(self):
         if not len(self._masks):
@@ -319,8 +404,7 @@ class MainWindow(QtWidgets.QMainWindow):
         anim.start()
 
     def _move_blank_auto(self):
-        pattern = Image.open(
-            '/Users/raphaeljouretz/Documents/comic_translator/match.tif')
+        pattern = Image.open(self._match_path)
         cell = self._get_cur_cell()
         image = cell.get_image()
         blank_origin = imageprocessing.find_pattern(image, pattern)
